@@ -9,7 +9,7 @@ import { Verification } from "../models/verificationModel";
 import { decodedToken } from "../middleware/requireAuth";
 
 const createAccessToken = (id: string) => {
-    return sign({ id }, secretString1, { expiresIn: '10s' });
+    return sign({ id }, secretString1, { expiresIn: '5h' });
 }
 
 const createRefreshToken = (id: string) => {

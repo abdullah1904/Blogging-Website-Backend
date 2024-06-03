@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import {JwtPayload, verify } from "jsonwebtoken";
+import { JwtPayload, TokenExpiredError, verify } from "jsonwebtoken";
 import { secretString1 } from "../config";
 
 export interface decodedToken extends JwtPayload {
@@ -22,9 +22,15 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     const token = authorization.replace('Bearer ', "");
     try {
         verify(token, secretString1, (err, decoded) => {
-            req.token = decoded as decodedToken;
+            if (err) {
+                if (err instanceof TokenExpiredError) {
+                    res.status(400).send('Token Expired');
+                }
+            } else {
+                req.token = decoded as decodedToken;
+                next();
+            }
         });
-        next();
     } catch (error) {
         console.log(error);
         res.status(401).json({ "error": 'Request isn\'t authorized' });
