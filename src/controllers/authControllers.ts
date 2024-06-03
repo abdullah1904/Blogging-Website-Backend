@@ -2,13 +2,18 @@ import { Request, Response } from "express";
 import { genSalt, hash, compare } from "bcrypt";
 import { createTransport } from "nodemailer";
 import { generate } from "otp-generator";
-import { sign } from "jsonwebtoken";
+import jwt, { sign } from "jsonwebtoken";
 import { User } from "../models/userModel";
-import { secretString } from "../config";
+import { secretString1, secretString2 } from "../config";
 import { Verification } from "../models/verificationModel";
+import { decodedToken } from "../middleware/requireAuth";
 
-const createToken = (id: string) => {
-    return sign({ id }, secretString, { expiresIn: '5d' });
+const createAccessToken = (id: string) => {
+    return sign({ id }, secretString1, { expiresIn: '10s' });
+}
+
+const createRefreshToken = (id: string) => {
+    return sign({id}, secretString2, {expiresIn: '7d'});
 }
 
 const generateOTP = async () => {
@@ -16,7 +21,7 @@ const generateOTP = async () => {
 }
 
 const generateTokenForVerification = (email: string) => {
-    return sign({ email }, secretString, { expiresIn: '3m' });
+    return sign({ email }, secretString1, { expiresIn: '3m' });
 }
 
 export const loginUser = async (req: Request, res: Response) => {
@@ -33,8 +38,9 @@ export const loginUser = async (req: Request, res: Response) => {
         if (!match) {
             return res.status(400).json({ "message": "Incorrect Password" });
         }
-        const token = createToken(user._id.toString());
-        res.status(200).json({ "message": "User Login Successfully", email, token });
+        const accessToken = createAccessToken(user._id.toString());
+        const refreshToken = createRefreshToken(user._id.toString());
+        res.status(200).json({ "message": "User Login Successfully", email, accessToken, refreshToken });
     }
     catch (error) {
         return res.status(500).json({ error });
@@ -54,9 +60,9 @@ export const signupUser = async (req: Request, res: Response) => {
         const salt = await genSalt(10);
         const hashedPassword = await hash(password, salt);
         const user = await User.create({ username, email, password: hashedPassword });
-        const { _id } = user;
-        const token = createToken(_id.toString());
-        res.status(200).json({ "message": "User Signup Successfully", email, token });
+        const accessToken = createAccessToken(user._id.toString());
+        const refreshToken = createRefreshToken(user._id.toString());
+        res.status(200).json({ "message": "User Signup Successfully", email, accessToken, refreshToken });
     }
     catch (err) {
         return res.status(500).json({ err });
@@ -66,10 +72,10 @@ export const signupUser = async (req: Request, res: Response) => {
 export const resetPassword = async (req: Request, res: Response) => {
     try {
         const { oldPassword, newPassword } = req.body;
-        const userId = req.token.id;
         if (!oldPassword || !newPassword) {
             return res.status(400).send('Send All Required Fields');
         }
+        const userId = req.token.id;
         const user = await User.findOne({ userId });
         if (user?.password != null) {
             const match = await compare(user?.password, oldPassword);
@@ -80,7 +86,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         const salt = await genSalt(10);
         const newHashedPassword = await hash(newPassword, salt);
         const updatedUserData = await User.findByIdAndUpdate(userId, { ...user, password: newHashedPassword });
-        const token = createToken(updatedUserData?.id.toString());
+        const token = createAccessToken(updatedUserData?.id.toString());
         res.status(200).json({ "message": "Password Reset Successfully", email: updatedUserData?.email, token });
     }
     catch (err: any) {
@@ -191,4 +197,14 @@ export const forgetPassword = async (req: Request, res: Response) => {
     catch (error) {
         return res.status(500).json({ error });
     }
+}
+
+export const refreshToken = (req:Request, res:Response)=>{
+    const {token} = req.body;
+    if(!token){
+        return res.status(404).send('Send Refresh Token');
+    }
+    const decoded = jwt.verify(token,secretString2) as decodedToken;
+    const newAccessToken = createAccessToken(decoded.id);
+    res.status(200).json({"accessToken": newAccessToken});
 }

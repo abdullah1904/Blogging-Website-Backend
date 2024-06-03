@@ -20,6 +20,9 @@ export const getPost = async (req: Request, res: Response) => {
     try {
         const { id: postId } = req.params;
         const post = await Post.findById(postId).populate('authorId');
+        if(!post){
+            return res.status(404).send({"message": "Post not found"})
+        }
         return res.status(200).json(post);
     }
     catch (error) {
@@ -52,13 +55,15 @@ export const updatePost = async (req: Request, res: Response) => {
         const { id: postId } = req.params;
         const post = await Post.findById(postId);
         if (!post) {
-            return res.status(404).send({ message: "Book not found" });
+            return res.status(404).send({ message: "Post not found" });
         }
-        if (req.token.id !== post?.authorId) {
-            return res.status(400).json({ "message": "Invalid User" });
+        if(post?.authorId != undefined){    
+            if (req.token.accessToken !== post?.authorId.toString()) {
+                return res.status(400).json({ "message": "Invalid User" });
+            }
         }
         const result = await Post.findByIdAndUpdate(postId, req.body);
-        return res.status(200).send({ message: 'Book updated successfully' });
+        return res.status(200).send({ message: 'Post updated successfully' });
     }
     catch (error) {
         res.status(500).send({ error });
@@ -69,8 +74,10 @@ export const deletePost = async (req: Request, res: Response) => {
     try {
         const { id: postId } = req.params;
         const post = await Post.findById(postId);
-        if (req.token.id !== post?.authorId) {
-            return res.status(400).json({ "message": "Invalid User" });
+        if(post?.authorId != undefined){    
+            if (req.token.accessToken !== post?.authorId.toString()) {
+                return res.status(400).json({ "message": "Invalid User" });
+            }
         }
         const result = await Post.findByIdAndDelete(postId);
         if (!result) {

@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { secretString } from "../config";
-import { User } from "../models/userModel";
+import {JwtPayload, verify } from "jsonwebtoken";
+import { secretString1 } from "../config";
 
-export interface decodedToken extends JwtPayload{
-    id: string;
+export interface decodedToken extends JwtPayload {
+    id: string
 }
 
 declare global {
@@ -22,7 +21,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     }
     const token = authorization.replace('Bearer ', "");
     try {
-        jwt.verify(token, secretString,(err,decoded)=>{
+        verify(token, secretString1, (err, decoded) => {
             req.token = decoded as decodedToken;
         });
         next();
