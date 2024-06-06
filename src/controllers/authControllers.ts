@@ -9,7 +9,7 @@ import { Verification } from "../models/verificationModel";
 import { decodedToken } from "../middleware/requireAuth";
 
 const createAccessToken = (id: string) => {
-    return sign({ id }, secretString1, { expiresIn: '5h' });
+    return sign({ id }, secretString1, { expiresIn: '1d' });
 }
 
 const createRefreshToken = (id: string) => {
@@ -40,7 +40,8 @@ export const loginUser = async (req: Request, res: Response) => {
         }
         const accessToken = createAccessToken(user._id.toString());
         const refreshToken = createRefreshToken(user._id.toString());
-        res.status(200).json({ "message": "User Login Successfully", email, accessToken, refreshToken });
+        const username = user.username;
+        res.status(200).json({ "message": "User Login Successfully", username ,accessToken, refreshToken });
     }
     catch (error) {
         return res.status(500).json({ error });
@@ -62,7 +63,7 @@ export const signupUser = async (req: Request, res: Response) => {
         const user = await User.create({ username, email, password: hashedPassword });
         const accessToken = createAccessToken(user._id.toString());
         const refreshToken = createRefreshToken(user._id.toString());
-        res.status(200).json({ "message": "User Signup Successfully", email, accessToken, refreshToken });
+        res.status(200).json({ "message": "User Signup Successfully", username, accessToken, refreshToken });
     }
     catch (err) {
         return res.status(500).json({ err });
