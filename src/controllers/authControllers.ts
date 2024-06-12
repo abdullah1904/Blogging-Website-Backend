@@ -110,12 +110,12 @@ export const sendOTP = async (req: Request, res: Response) => {
     const transporter = createTransport({
         service: 'gmail',
         auth: {
-            user: '2022cs525@student.uet.edu.pk',
-            pass: 'btof ryus etxz ewzb'
+            user: '',
+            pass: ''
         }
     });
     const mailOptions = {
-        from: '2022cs525@student.uet.edu.pk',
+        from: '',
         to: Email,
         subject: 'OTP for Forget Password',
         text: `OTP is: ${verifyOTP}`
@@ -155,12 +155,12 @@ export const verifyOTP = async (req: Request, res: Response) => {
         const transporter = createTransport({
             service: 'gmail',
             auth: {
-                user: '2022cs525@student.uet.edu.pk',
-                pass: 'btof ryus etxz ewzb'
+                user: '',
+                pass: ''
             }
         });
         const mailOptions = {
-            from: '2022cs525@student.uet.edu.pk',
+            from: '',
             to: email,
             subject: 'Verification Token for Forget Password',
             text: `Verification Token is: ${verificationRecord?.token}`
